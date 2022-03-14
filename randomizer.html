@@ -1,0 +1,574 @@
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
+	<style>
+		body, select, option, input, #switch_button {
+			text-transform: uppercase;
+			font-family: sans-serif;
+			font-weight: bold;
+			color: white;
+		}
+
+		#intro {
+			background-color: rgba(255, 255, 255, 0.6);
+			position: fixed;
+			width: 100%;
+			height: 100%;
+			z-index: 2;
+		}
+
+		#intro_window {
+			font-size: 1em;
+			border: 3px solid cadetblue;
+			border-radius: 10px;
+			position: relative;
+			top: 20%;
+			margin: auto auto;
+			width: 60%;
+			/*height: 60%;*/
+			background-color: white;
+			text-align: center;
+			color: black;
+		}
+
+		#intro_centre {
+			position: relative;
+		}
+
+		#intro_title {
+			color: white;
+			background-color: darkgoldenrod;
+			font-size: 2em;
+			padding: 10% 0;
+			margin-bottom: 1em;
+			border-radius: 10px;
+		}
+
+		#email {
+			text-transform: lowercase;
+		}
+
+		#start {
+			border-radius: 10px;
+			padding: 10px 0;
+			background-color: cadetblue;
+			font-size: 2em;
+			color: white;
+			width: 50%;
+			min-width: 5em;
+			margin: 1em auto;
+			cursor: pointer;
+		}
+
+		.form-element,
+		#switch_button {
+			width: 100%;
+			border-radius: 5px;
+			padding: 5px;
+			font-size: 2em;
+			text-align: center;
+			text-align-last: center;
+			cursor: pointer;
+		}
+
+		#switch_button {
+			padding: 0;
+		}
+
+		select {
+			text-align-last: center;
+		}
+
+		option {
+			width: 300px;
+		}
+
+		input {
+			color: black;
+			border: 3px solid gray;
+		}
+
+		input:focus {
+			border: 3px solid #29B0D9;
+		}
+		
+		#button {
+			background-color: cornflowerblue;
+			padding: 30px 0;
+			cursor: pointer;
+			font-size: 3em;
+		}
+
+		#button:hover {
+			background-color: lightpink;
+		}
+
+		#button:active {
+			background-color: crimson;
+		}
+
+		.group {
+			border-radius: 5px;
+			border: 1px solid black;
+			padding: 2px;
+		}
+
+		.group::after {
+			content: "";
+			display: table;
+			clear: both;
+		}
+
+		.tile {
+			border-radius: 5px;
+			margin: 5px;
+			font-size: 3em;
+			float: left;
+			cursor: pointer;
+		}
+
+		.group_number {
+			padding: 5px;
+		}
+
+		.student_number {
+			padding: 5px 20px;
+		}
+
+		.big_tile {
+			margin: 5px 0;
+			padding: 0;
+			width: 100%;
+			font-size: 10em;
+			text-align-last: center;
+		}
+
+		.color_0 {
+			background-color: burlywood;
+		}
+
+		.color_1 {
+			background-color: crimson;
+		}
+
+		.color_2 {
+			background-color: orange;
+		}
+
+		.color_3 {
+			background-color: yellowgreen;
+		}
+
+		.color_4 {
+			background-color: lightseagreen;
+		}
+
+		.color_5 {
+			background-color: cornflowerblue;
+		}
+
+		.color_6 {
+			background-color: mediumpurple;
+		}
+
+		.color_7 {
+			background-color: deepskyblue;
+		}
+
+		.color_8 {
+			background-color: peru;
+		}
+
+		.color_9 {
+			background-color: gold;
+		}
+
+		.deactivated {
+			background-color: lightgray;
+			color: white;
+		}
+	</style>	
+</head>
+<body>
+	<div id='intro'>
+		<div id='intro_window'>
+			<div id='intro_centre'>
+				<div id='intro_title'>Reckless sorting hat</div>
+				<div>Let's make random choise in your class</div>
+				<div>Made by K.Gorokhov</div>
+				<div id='email'></div>
+				<div id='start'>
+					<div>Start</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id='form'>
+		<div>
+			<input class="form-element" type="text" id="people"></>
+		</div>
+		<div>
+			<select class="form-element" id="mode">
+			</select>
+		</div>
+		<div id="additional_field">
+		</div>
+	</div>
+	<div id="button" class="form-element">
+		Create
+	</div>
+	<div id="container"><div>
+	<script>
+		var start = document.getElementById('start');
+		start.onclick = closeIntro;
+		document.body.onselectstart = function() {return false};
+		var peopleValueElement = document.getElementById('people');
+		setTextForInputNumberElement(peopleValueElement, 'Total number of people');
+		peopleValueElement.onfocus = setDefaultValue;
+		setMinimumValueForInputNumberElement(peopleValueElement);
+		var select = document.getElementById('mode');
+		var modes = {
+			"Build chain": {'function': createChain,
+							'color': 2
+							},
+			"Merge into groups": {'function': createGroups,
+								'inputElementIdName': 'people_in_group',
+								'textValue': 'People in a group',
+								'color': 3,
+								'defaultValue': 2,
+								'groupTitle': 'Group'
+							},
+			"Split into parts": {'function': createParts,
+								'inputElementIdName': 'parts_in_class',
+								'textValue': 'Parts in the class',
+								'color': 4,
+								'defaultValue': 3,
+								'groupTitle': 'Part'
+								},
+			'Choose One': {'function': chooseOne,
+							'color': 6,
+							}
+		};
+
+		var optionsFragment = document.createDocumentFragment();
+		Object.keys(modes).forEach(function(eachMode) {
+			var optionElement = document.createElement('option');
+			optionElement.innerHTML = eachMode;
+			optionElement.classList.add('color_' + modes[eachMode].color);
+			optionsFragment.appendChild(optionElement);
+		});		
+		select.appendChild(optionsFragment);
+		select.onchange = setMode;
+
+		var button = document.getElementById('button');
+		button.onclick = generate;		
+		setCurrentMode(Object.keys(modes)[0]);
+
+		function closeIntro(event) {
+			var intro = document.getElementById('intro');
+			intro.style.display = 'none';
+			document.addEventListener('keydown', function(event) {
+				if (event.key == 'Enter') {
+					generate()
+				};
+			});
+		};
+
+		function setTextForInputNumberElement(inputElement, text) {
+			inputElement.value = inputElement.placeholder = text;
+		};
+
+		function setMinimumValueForInputNumberElement(inputElement) {
+			inputElement.min = 2;
+		};
+
+		function setDefaultValue(event) {
+			event.target.type = 'number';
+			var inputElementIdName = event.target.id
+			// var modesName = Object.keys(modes);
+			// for (var modeIndex=0; modeIndex<modesName.length; modeIndex++) {
+			// 	var mode = modes[modesName[modeIndex]];
+			// 	console.log(modeIndex, mode)
+			// 	if (inputElementIdName == mode.inputElementIdName) {
+			// 		var defaultValue = mode.defaultValue;
+			// 		break;
+			// 	};
+			// };
+			// console.log(defaultValue)
+			// event.target.value = defaultValue;
+			event.target.onfocus = null;
+		};
+
+		function setCurrentMode(mode) {
+			setColorForModeSelect(mode);
+			button.dataset.mode = mode;
+		};
+
+		function setColorForModeSelect(mode) {
+			var modeSelectElement = document.getElementById('mode');
+			var currentColorClass = modeSelectElement.classList[1];
+			if (currentColorClass) {
+				modeSelectElement.classList.remove(currentColorClass);
+			};
+			modeSelectElement.classList.add('color_' + modes[mode].color);
+		};
+
+		function setSwitchFunction(event) {
+			var switcher = event.target;
+			var mode = Number(switcher.dataset.mode);
+			if (mode) {
+				switcher.innerHTML = 'max';
+				switcher.classList.remove('color_4');
+				switcher.classList.add('color_2');
+				switcher.dataset.mode = 0;
+			} else {
+				switcher.innerHTML = 'min';
+				switcher.classList.remove('color_2');
+				switcher.classList.add('color_4');
+				switcher.dataset.mode = 1;
+			};
+		};
+
+		function setMode(event) {
+			var addForm = document.getElementById('additional_field');
+			cleanNodeContent(addForm);
+			var mode = event.target.value;
+			var inputElement = document.createElement('input');
+			inputElement.classList.add('form-element');
+			switch (mode) {
+				case "Build chain":
+				break;
+				case "Merge into groups":
+					var switcher = document.createElement('div');
+					switcher.onclick = setSwitchFunction;
+					switcher.id = 'switch_button';
+					var switcherContainer = Object();
+					switcherContainer['target'] = switcher;
+					setSwitchFunction(switcherContainer);
+					addForm.appendChild(switcher);
+				case "Split into parts":
+					inputElement.id = modes[mode].inputElementIdName;
+					inputElement.onfocus = setDefaultValue;
+					setMinimumValueForInputNumberElement(inputElement);
+					setTextForInputNumberElement(inputElement, modes[mode].textValue);
+					addForm.appendChild(inputElement);
+				break;
+			};
+			setCurrentMode(mode);
+		};
+
+		function getRandomInt(min, max) {
+			min = Math.ceil(min);
+			max = Math.floor(max);
+			return Math.floor(Math.random() * (max - min)) + min; //Максимум не включается, минимум включается
+		};
+
+		function cleanNodeContent(parentNode) {
+			while (parentNode.firstChild) {
+				parentNode.removeChild(parentNode.firstChild);
+			};
+		};
+
+		function compareNumeric(a, b) {
+			if (a > b) return 1;
+			if (a < b) return -1;
+		};
+
+		function createGroupNumberElement(groupTitle, groupNumber) {
+			var groupNumberElement = document.createElement('div');
+			groupNumberElement.classList.add("group_number", "tile");
+			groupNumberElement.innerHTML = groupTitle + ' ' + groupNumber;
+			groupNumberElement.classList.add('color_' + groupNumber%10);
+			groupNumberElement.onclick = deactivateGroup;
+			return groupNumberElement;
+		};
+
+		function createGroupElement(mode, groupNumber) {
+			var groupTitle = modes[mode].groupTitle;
+			var groupElement = document.createElement('div');
+			groupElement.classList.add('group');
+			var groupNumberElement = createGroupNumberElement(groupTitle, groupNumber);
+			groupElement.appendChild(groupNumberElement);
+			return groupElement;
+		};
+
+		function createStudentsContainer(numbersInGroup, sortMode=true) {
+			if (sortMode) {
+				numbersInGroup.sort(compareNumeric);
+			};
+			var studentsContainer = document.createElement('div');
+			studentsContainer.classList.add("students_container");
+			numbersInGroup.forEach(function(eachNumber) {
+				var studentElement = document.createElement('div');
+				studentElement.classList.add('student_number', "tile");
+				studentElement.innerHTML = eachNumber;
+				studentElement.classList.add('color_' + eachNumber%10);
+				studentsContainer.appendChild(studentElement);
+			});
+			return studentsContainer;
+		};
+
+		function getInputElement(mode) {
+			var inputElementIdName = modes[mode].inputElementIdName;
+			return document.getElementById(inputElementIdName);
+		};
+
+		function setValue(mode) {
+			var inputElement = getInputElement(mode);
+			var inputValue = inputElement.value;
+			inputValue = Number(inputValue)
+			if (!inputValue) {
+				inputValue = modes[mode].defaultValue;
+				refreshInputElement(mode, inputValue);
+			};
+			return inputValue;
+		};
+
+		function refreshInputElement(mode, value) {
+			var inputElement = getInputElement(mode);
+			inputElement.value = value;
+		};
+
+		function deactivateOneStudent(event) {
+			deactivateElement(event.target);
+		};
+
+		function deactivateGroup(event) {
+			deactivateElement(event.target);
+			event.target.nextSibling.childNodes.forEach(function(eachChild) {
+				deactivateElement(eachChild);
+			});
+		};
+
+		function deactivateElement(element) {
+			element.classList.toggle('deactivated');
+		};
+
+		function fillGroupContainer(peopleInGroups, shuffledNumbers, mode) {
+			var groupsFragment = document.createDocumentFragment();
+			var previousIndex = 0;
+			for (var groupNumber=0;groupNumber<peopleInGroups.length;groupNumber++) {
+				var groupElement = createGroupElement(mode, groupNumber+1);
+				var peopleInGroup = peopleInGroups[groupNumber];
+				var numbersInGroup = [];
+				for (var index=0;index<peopleInGroup;index++) {
+					numbersInGroup.push(shuffledNumbers[index + previousIndex]);
+				};
+				previousIndex+=index;
+				var studentsContainer = createStudentsContainer(numbersInGroup);
+				groupElement.appendChild(studentsContainer);
+				groupsFragment.appendChild(groupElement);
+			};
+			container.appendChild(groupsFragment);
+		};
+
+		function fillContainer(numbers) {
+			var studentsContainer = createStudentsContainer(numbers, false);
+			studentsContainer.childNodes.forEach(function(eachStudentElement) {
+				eachStudentElement.onclick = deactivateOneStudent;
+			});
+			container.appendChild(studentsContainer);
+			return studentsContainer;
+		};
+
+		function chooseOne(shuffledNumbers) {
+			var studentsContainer = fillContainer([shuffledNumbers[0]]);
+			studentsContainer.firstChild.classList.add('big_tile');
+		};
+
+		function createChain(shuffledNumbers) {
+			var numbers = [];
+			var chainFragment = document.createDocumentFragment();
+			shuffledNumbers.forEach(function(forEachNumber) {
+				numbers.push(forEachNumber);
+			});
+			fillContainer(numbers);
+		};
+
+		function createGroups(shuffledNumbers) {
+			// var mode = 'Merge into groups';
+			mode = button.dataset.mode;
+			var peopleInGroup = setValue(mode);
+
+			var totalPeople = shuffledNumbers.length;
+			if (totalPeople < peopleInGroup) {
+				peopleInGroup = 2;
+				refreshInputElement(mode, peopleInGroup);
+			};
+
+			var peopleInGroups = [];
+			var switcher = document.getElementById('switch_button');
+			var fullGroups = Math.floor(totalPeople/peopleInGroup);
+			if (!Number(switcher.dataset.mode)) {
+				var restPeople = totalPeople - fullGroups * peopleInGroup;
+				for (var peopleNumber=0;peopleNumber<fullGroups;peopleNumber++) {
+					peopleInGroups.push(peopleInGroup);
+				};
+				if (restPeople) {
+					peopleInGroups.push(restPeople);
+				};
+			} else {
+				extraPeopleInGroup = Math.ceil(totalPeople/fullGroups);
+				var restPeople = fullGroups * extraPeopleInGroup - totalPeople;
+				var extraGroups = fullGroups - restPeople;
+				for (var peopleNumber=0;peopleNumber<extraGroups;peopleNumber++) {
+					peopleInGroups.push(extraPeopleInGroup);
+				};
+				for (var peopleNumber=0;peopleNumber<restPeople;peopleNumber++) {
+					peopleInGroups.push(peopleInGroup);
+				};
+			};
+
+			fillGroupContainer(peopleInGroups, shuffledNumbers, mode);
+		};
+
+		function createParts(shuffledNumbers) {
+			// var mode = "Split into parts";
+			mode = button.dataset.mode;
+			var partsInClass = setValue(mode);
+
+			var totalPeople = shuffledNumbers.length;
+			if (totalPeople < partsInClass) {
+				partsInClass = totalPeople;
+				refreshInputElement(mode, partsInClass);
+			};
+
+			var peopleInGroup = totalPeople/partsInClass;
+			var minimumPeopleInGroup = Math.floor(peopleInGroup);
+			var restPeople = totalPeople - minimumPeopleInGroup * partsInClass;
+			var peopleInGroups = [];
+			for (var peopleNumber=0;peopleNumber<restPeople;peopleNumber++) {
+				peopleInGroups.push(minimumPeopleInGroup + 1);
+			};
+			for (var peopleNumber=0;peopleNumber<partsInClass-restPeople;peopleNumber++) {
+				peopleInGroups.push(minimumPeopleInGroup);
+			};
+
+			fillGroupContainer(peopleInGroups, shuffledNumbers, mode);
+		};
+
+		function generate(event) {
+			var container = document.getElementById('container');
+			cleanNodeContent(container);
+			var value = Number(peopleValueElement.value);
+			if (!value || value < 0) {
+				peopleValueElement.value = value = 5;
+			};
+			var mode = document.getElementById('mode').value;
+			// console.log(mode);
+			var numbers = [];
+			for (var number=1;number<value+1;number++) {
+				numbers.push(number);
+			};
+			// console.log(numbers);
+			var shuffledNumbers = [];
+			while (shuffledNumbers.length < value) {
+				var currentValue = getRandomInt(1, value+1);
+				var currentValueIndex = shuffledNumbers.indexOf(currentValue);
+				if (currentValueIndex < 0) {
+					shuffledNumbers.push(currentValue);
+				};
+			};
+			modes[mode].function(shuffledNumbers);
+		};
+	</script>
+</body>
